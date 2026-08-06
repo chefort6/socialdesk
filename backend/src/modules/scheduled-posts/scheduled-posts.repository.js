@@ -294,4 +294,47 @@ exports.updateParentPostStatus = async ({ postId }) => {
   return null;
 };
 
+/**
+ * Retrieves failed publish targets for admin inspection.
+ */
+exports.getFailedPublishTargets = async ({ limit = 50, offset = 0 } = {}) => {
+  const { data, error } = await supabase
+    .from("post_targets")
+    .select(`
+      id,
+      post_id,
+      social_account_id,
+      status,
+      error_message,
+      published_at,
+      created_at,
+      posts (
+        id,
+        user_id,
+        title,
+        body_text,
+        scheduled_at
+      ),
+      social_accounts (
+        id,
+        display_name,
+        username,
+        platforms (
+          code,
+          name
+        )
+      )
+    `)
+    .eq("status", TARGET_STATUS.FAILED)
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) {
+    throw new Error(`Failed to load failed publish targets: ${error.message}`);
+  }
+
+  return data || [];
+};
+
 exports.TARGET_STATUS = TARGET_STATUS;
+

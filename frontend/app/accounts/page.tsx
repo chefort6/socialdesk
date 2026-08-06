@@ -91,6 +91,13 @@ export default function AccountsPage() {
       } else {
         alert("User ID missing. Please log in again.");
       }
+    } else if (platformId === "x") {
+      const userId = Cookies.get("user-id");
+      if (userId) {
+        window.location.href = `/api/auth/twitter/oauth?userId=${userId}`;
+      } else {
+        alert("User ID missing. Please log in again.");
+      }
     } else {
       alert(`${findPlatform(platformId)?.name} connection is coming soon!`);
     }
