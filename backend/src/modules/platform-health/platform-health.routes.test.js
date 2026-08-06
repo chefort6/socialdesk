@@ -24,10 +24,13 @@ test("GET /api/platform-health rejects a non-admin session", async () => {
   assert.equal(response.status, 403);
 });
 
-test("GET /api/platform-health lets an admin through to the (unimplemented) surface", async () => {
+test("GET /api/platform-health lets an admin through and returns secrets readiness report", async () => {
   const response = await supertest(app)
     .get("/api/platform-health")
     .set("Cookie", `auth-token=${tokenFor("admin")}`);
 
-  assert.equal(response.status, 501);
+  assert.equal(response.status, 200);
+  assert.equal(response.body.success, true);
+  assert.ok(response.body.data.secretsReadiness);
 });
+

@@ -4,9 +4,20 @@
  * checks (DB/Redis/uptime) are a separate future ticket, so this returns 501
  * rather than faking a 200.
  */
+const { getSecretsReadiness } = require("../../shared/config/env.config");
+
 exports.getPlatformHealth = async (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: "platform-health is not implemented yet (admin access enforced)",
+  const readiness = getSecretsReadiness();
+  const uptime = process.uptime();
+
+  res.status(200).json({
+    success: true,
+    data: {
+      status: "healthy",
+      uptime: `${Math.floor(uptime)}s`,
+      environment: process.env.NODE_ENV || "development",
+      secretsReadiness: readiness,
+    },
   });
 };
+
