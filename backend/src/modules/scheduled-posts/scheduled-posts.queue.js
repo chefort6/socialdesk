@@ -249,7 +249,98 @@ exports.cancelPostTargetsByAccountId = async ({ accountId }) => {
   });
 };
 
+exports.getQueueHealth = async () => {
+  const enabled = isEnabled();
+  const conn = getConnection();
+
+  if (!enabled) {
+    return {
+      enabled: false,
+      status: "disabled",
+      redis: { host: conn.host, port: conn.port },
+      publishingQueue: null,
+      schedulerQueue: null,
+      config: {
+        recoveryEnabled: isRecoveryEnabled(),
+        recoveryPattern: getSchedulerPattern(),
+        concurrency: getWorkerConcurrency(),
+        attempts: getPublishAttempts(),
+        backoffDelayMs: getBackoffDelay(),
+      },
+    };
+  }
+
+  const pubQ = getPublishingQueue();
+  const schedQ = schedulerQueue || createSchedulerQueue();
+
+  let pubJobCounts = { waiting: 0, active: 0, delayed: 0, completed: 0, failed: 0 };
+  let schedJobCounts = { waiting: 0, active: 0, delayed: 0, completed: 0, failed: 0 };
+  let redisConnected = false;
+
+  try {
+    const client = await pubQ.client;
+    const pingRes = await client.ping();
+    redisConnected = pingRes === "PONG";
+
+    pubJobCounts = await pubQ.getJobCounts("waiting", "active", "delayed", "completed", "failed");
+    schedJobCounts = await schedQ.getJobCounts("waiting", "active", "delayed", "completed", "failed");
+  } catch (err) {
+    console.error("Queue health check error:", err.message || err);
+  }
+
+  return {
+    enabled: true,
+    status: redisConnected ? "healthy" : "unhealthy",
+    redis: {
+      host: conn.host,
+      port: conn.port,
+      connected: redisConnected,
+    },
+    publishingQueue: {
+      name: pubQ.name,
+      counts: pubJobCounts,
+    },
+    schedulerQueue: {
+      name: schedQ.name,
+      counts: schedJobCounts,
+    },
+    config: {
+      recoveryEnabled: isRecoveryEnabled(),
+      recoveryPattern: getSchedulerPattern(),
+      concurrency: getWorkerConcurrency(),
+      attempts: getPublishAttempts(),
+      backoffDelayMs: getBackoffDelay(),
+    },
+  };
+};
+
+exports.getFailedJobs = async ({ limit = 50 } = {}) => {
+  if (!isEnabled()) {
+    return [];
+  }
+
+  try {
+    const pubQ = getPublishingQueue();
+    const failedJobs = await pubQ.getFailed(0, limit - 1);
+
+    return failedJobs.map((job) => ({
+      id: job.id,
+      name: job.name,
+      data: job.data,
+      attemptsMade: job.attemptsMade,
+      failedReason: job.failedReason,
+      stacktrace: job.stacktrace,
+      timestamp: job.timestamp,
+      finishedOn: job.finishedOn,
+    }));
+  } catch (err) {
+    console.error("Failed to retrieve queue failed jobs:", err.message || err);
+    return [];
+  }
+};
+
 exports.stop = async () => {
+
   await Promise.all([
     schedulerWorker?.close(),
     publishingWorker?.close(),

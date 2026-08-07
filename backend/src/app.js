@@ -2,7 +2,10 @@ const express = require("express");
 const facebookRoutes = require("./modules/meta/meta.routes");
 const pinterestRoutes = require("./modules/pinterest/pinterest.routes");
 const youtubeRoutes = require("./modules/youtube/youtube.routes");
+const twitterRoutes = require("./modules/twitter/twitter.routes");
+const tiktokRoutes = require("./modules/tiktok/tiktok.routes");
 const authRoutes = require("./modules/auth/auth.routes");
+
 const scheduledPostsRoutes = require("./modules/scheduled-posts/scheduled-posts.routes");
 const postsRoutes = require("./modules/posts/posts.routes");
 const accountsRoutes = require("./modules/accounts/accounts.routes");
@@ -38,6 +41,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/auth/facebook", facebookRoutes);
 app.use("/api/auth/pinterest", pinterestRoutes);
 app.use("/api/auth/youtube", youtubeRoutes);
+app.use("/api/auth/twitter", twitterRoutes);
+app.use("/api/auth/tiktok", tiktokRoutes);
+
 app.use("/api/posts", postsRoutes);
 app.use("/api/accounts", accountsRoutes);
 app.use("/api/analytics", analyticsRoutes);

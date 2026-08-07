@@ -30,20 +30,20 @@ exports.createPostSchema = z.object({
     .object({
       title: z.string().max(500).optional(),
       body_text: z.string().optional(),
-      media_urls: z.array(z.string().url()).optional(),
-      thumbnail_url: z.string().url().optional().nullable(),
+      media_urls: z.array(z.string()).optional(),
+      thumbnail_url: z.string().optional().nullable(),
       hashtags: z.array(z.string()).optional(),
       status: z.enum(POST_STATUSES).optional().default("draft"),
-      scheduled_at: z.string().datetime({ offset: true }).optional().nullable(),
+      scheduled_at: z.string().optional().nullable(),
       content_type_id: z.number().int().positive().optional(),
-      target_account_ids: z.array(z.string().uuid()).optional().default([]),
+      target_account_ids: z.array(z.string()).optional().default([]),
     })
     .refine(
-      (data) => data.body_text || (data.media_urls && data.media_urls.length > 0),
+      (data) => Boolean(data.body_text || (data.media_urls && data.media_urls.length > 0)),
       { message: "Post must have body text or media", path: ["body_text"] },
     )
     .refine(
-      (data) => data.status !== "scheduled" || data.scheduled_at,
+      (data) => data.status !== "scheduled" || Boolean(data.scheduled_at),
       { message: "scheduled_at is required when status is scheduled", path: ["scheduled_at"] },
     ),
 });
@@ -59,15 +59,16 @@ exports.updatePostSchema = z.object({
     .object({
       title: z.string().max(500).optional(),
       body_text: z.string().optional(),
-      media_urls: z.array(z.string().url()).optional(),
-      thumbnail_url: z.string().url().optional().nullable(),
+      media_urls: z.array(z.string()).optional(),
+      thumbnail_url: z.string().optional().nullable(),
       hashtags: z.array(z.string()).optional(),
       status: z.enum(POST_STATUSES).optional(),
-      scheduled_at: z.string().datetime({ offset: true }).optional().nullable(),
+      scheduled_at: z.string().optional().nullable(),
       content_type_id: z.number().int().positive().optional(),
+      target_account_ids: z.array(z.string()).optional(),
     })
     .refine(
-      (data) => data.status !== "scheduled" || data.scheduled_at,
+      (data) => data.status !== "scheduled" || Boolean(data.scheduled_at),
       { message: "scheduled_at is required when status is scheduled", path: ["scheduled_at"] },
     ),
 });

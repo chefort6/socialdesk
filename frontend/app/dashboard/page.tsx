@@ -241,7 +241,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    fetch("/api/dashboard/overview")
+    fetch("/api/dashboard/overview", { credentials: "include" })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load dashboard overview");
         return res.json();
@@ -734,7 +734,20 @@ export default function Home() {
             <div style={{ background: "#fff", borderRadius: 14, padding: "14px 16px", border: "1px solid #e8edf3" }}>
               <p style={{ fontSize: 15, fontWeight: 700, margin: "0 0 14px" }}>Connected Accounts</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {(data?.connected_accounts || []).map(a => <ConnRow key={a.handle} acc={a} />)}
+                {(data?.connected_accounts || []).length > 0 ? (
+                  (data?.connected_accounts || []).map(a => <ConnRow key={a.handle} acc={a} />)
+                ) : (
+                  <div style={{ textAlign: "center", padding: "12px 0" }}>
+                    <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 10px" }}>No connected accounts found</p>
+                    <button
+                      onClick={() => router.push("/accounts")}
+                      style={{ background: "#1e3a5f", color: "#fff", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "background 0.15s" }}
+                      onMouseEnter={e => (e.currentTarget.style.background = "#2563eb")}
+                      onMouseLeave={e => (e.currentTarget.style.background = "#1e3a5f")}>
+                      + Connect Account
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 

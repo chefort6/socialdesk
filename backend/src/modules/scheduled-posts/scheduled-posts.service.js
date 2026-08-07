@@ -3,7 +3,10 @@ const socialConnectionsService = require("../social-connections/social-connectio
 const metaService = require("../meta/meta.service");
 const pinterestService = require("../pinterest/pinterest.service");
 const youtubeService = require("../youtube/youtube.service");
+const twitterService = require("../twitter/twitter.service");
+const tiktokService = require("../tiktok/tiktok.service");
 const notificationsService = require("../notifications/notifications.service");
+
 
 const DEFAULT_BATCH_SIZE = 10;
 const TERMINAL_TARGET_STATUSES = [
@@ -118,6 +121,22 @@ const publishYouTubeTarget = async ({ post, connection }) => {
   });
 };
 
+const publishTwitterTarget = async ({ post, connection }) => {
+  return twitterService.publishScheduledTweet({
+    socialAccountId: connection.socialAccountId,
+    text: post.body_text || post.title || "",
+    mediaUrl: getFirstMediaUrl(post),
+  });
+};
+
+const publishTikTokTarget = async ({ post, connection }) => {
+  return tiktokService.publishScheduledTikTokVideo({
+    socialAccountId: connection.socialAccountId,
+    videoUrl: getFirstMediaUrl(post),
+    title: post.title || post.body_text || "",
+  });
+};
+
 const publishTarget = async ({ post, connection }) => {
   switch (connection.platformCode) {
     case "facebook":
@@ -128,6 +147,11 @@ const publishTarget = async ({ post, connection }) => {
       return publishPinterestTarget({ post, connection });
     case "youtube":
       return publishYouTubeTarget({ post, connection });
+    case "x":
+    case "twitter":
+      return publishTwitterTarget({ post, connection });
+    case "tiktok":
+      return publishTikTokTarget({ post, connection });
     default:
       throw new Error(`Unsupported scheduled post platform: ${connection.platformCode}`);
   }
@@ -152,10 +176,18 @@ const refreshConnectionTokenIfNeeded = async (connection, post) => {
       case "youtube":
         updatedToken = await youtubeService.refreshOAuthToken(connection.socialAccountId);
         break;
+      case "x":
+      case "twitter":
+        updatedToken = await twitterService.refreshOAuthToken(connection.socialAccountId);
+        break;
+      case "tiktok":
+        updatedToken = await tiktokService.refreshOAuthToken(connection.socialAccountId);
+        break;
       default:
         // Other platforms (e.g., Pinterest) might not support auto-refresh, just return
         return connection;
     }
+
 
     if (updatedToken) {
       // Update the connection object dynamically before publishing
@@ -386,6 +418,10 @@ exports.executeDueScheduledPosts = async () => {
   }
 
   return { processed: targets.length };
+};
+
+exports.getFailedPublishTargets = async ({ limit = 50, offset = 0 } = {}) => {
+  return scheduledPostsRepository.getFailedPublishTargets({ limit, offset });
 };
 
 exports._private = {

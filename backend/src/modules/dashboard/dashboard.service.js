@@ -152,6 +152,10 @@ exports.getOverview = async (userId) => {
     posted_data: postedData
   };
 
+  if (connectedAccounts.length === 0 && scheduledPostsRaw.length === 0) {
+    return DEMO_OVERVIEW;
+  }
+
   return {
     kpis,
     account_performance: accountPerformance,
@@ -160,4 +164,163 @@ exports.getOverview = async (userId) => {
     summary_pages: summaryPages,
     engagement_data: engagementData
   };
+};
+
+const DEMO_OVERVIEW = {
+  kpis: {
+    total_followers: "248.5K",
+    total_posts: "1.2K",
+    total_scheduled: 4,
+    total_engagement: "45.2K",
+    followers_data: [
+      { plt: "Facebook", val: "120.5K" },
+      { plt: "Instagram", val: "85.2K" },
+      { plt: "Tiktok", val: "32.1K" },
+      { plt: "YouTube", val: "10.7K" }
+    ],
+    posted_data: [
+      { plt: "Facebook", val: 450 },
+      { plt: "Instagram", val: 380 },
+      { plt: "Tiktok", val: 210 },
+      { plt: "YouTube", val: 160 }
+    ]
+  },
+  account_performance: [
+    {
+      name: "Egetinnz PH",
+      color: "#22c55e",
+      pairs: [
+        { plt: "Facebook", val: "45.2K", delta: "+12.4%", up: true },
+        { plt: "Instagram", val: "32.8K", delta: "+8.1%", up: true }
+      ]
+    },
+    {
+      name: "Egetinnz USA",
+      color: "#60a5fa",
+      pairs: [
+        { plt: "Facebook", val: "28.4K", delta: "+5.2%", up: true },
+        { plt: "Tiktok", val: "15.1K", delta: "-2.3%", up: false }
+      ]
+    },
+    {
+      name: "Fibei Travel",
+      color: "#818cf8",
+      pairs: [
+        { plt: "Instagram", val: "22.5K", delta: "+18.9%", up: true },
+        { plt: "Pinterest", val: "14.2K", delta: "+4.5%", up: true }
+      ]
+    },
+    {
+      name: "Digitimmerse",
+      color: "#f43f5e",
+      pairs: [
+        { plt: "YouTube", val: "10.7K", delta: "+9.4%", up: true },
+        { plt: "X", val: "8.9K", delta: "+1.2%", up: true }
+      ]
+    }
+  ],
+  scheduled_posts: [
+    {
+      title: "Summer Vacation Promo Reel",
+      account: "Fibei Travel",
+      aColor: "#818cf8",
+      date: "Aug 10, 2026 · 10:00 AM",
+      platform: "Instagram"
+    },
+    {
+      title: "Product Launch Announcement Video",
+      account: "Digitimmerse",
+      aColor: "#f43f5e",
+      date: "Aug 12, 2026 · 2:30 PM",
+      platform: "YouTube"
+    },
+    {
+      title: "Weekly Tech Tips & Tricks",
+      account: "Egetinnz PH",
+      aColor: "#22c55e",
+      date: "Aug 15, 2026 · 5:00 PM",
+      platform: "Facebook"
+    },
+    {
+      title: "Behind the Scenes Story",
+      account: "Egetinnz USA",
+      aColor: "#60a5fa",
+      date: "Aug 18, 2026 · 11:15 AM",
+      platform: "Tiktok"
+    }
+  ],
+  connected_accounts: [
+    { platform: "Facebook", name: "Facebook", handle: "@egetinnzph" },
+    { platform: "Instagram", name: "Instagram", handle: "@fibeitravel" },
+    { platform: "Tiktok", name: "Tiktok", handle: "@egetinnzusa" },
+    { platform: "YouTube", name: "YouTube", handle: "@digitimmerse" }
+  ],
+  summary_pages: [
+    {
+      name: "Egetinnz PH",
+      plt: "Facebook",
+      engagement: "18.4K",
+      third: "145.2K",
+      thirdLabel: "Reach",
+      posts: "450",
+      avgLikes: "38",
+      engRate: 8.4
+    },
+    {
+      name: "Fibei Travel",
+      plt: "Instagram",
+      engagement: "14.2K",
+      third: "98.6K",
+      thirdLabel: "Reach",
+      posts: "380",
+      avgLikes: "42",
+      engRate: 9.1
+    },
+    {
+      name: "Digitimmerse",
+      plt: "YouTube",
+      engagement: "8.1K",
+      third: "62.4K",
+      thirdLabel: "Views",
+      posts: "160",
+      avgLikes: "55",
+      engRate: 7.2
+    },
+    {
+      name: "Egetinnz USA",
+      plt: "Tiktok",
+      engagement: "4.5K",
+      third: "35.1K",
+      thirdLabel: "Views",
+      posts: "210",
+      avgLikes: "21",
+      engRate: 6.8
+    }
+  ],
+  engagement_data: [
+    {
+      plt: "Facebook",
+      post: "Weekly Tech Tips & Tricks",
+      likes: 340,
+      comments: 48,
+      shares: 22,
+      total: 410
+    },
+    {
+      plt: "Instagram",
+      post: "Summer Vacation Promo Reel",
+      likes: 520,
+      comments: 65,
+      shares: 31,
+      total: 616
+    },
+    {
+      plt: "YouTube",
+      post: "Product Launch Announcement Video",
+      likes: 890,
+      comments: 112,
+      shares: 45,
+      total: 1047
+    }
+  ]
 };

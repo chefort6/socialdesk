@@ -33,20 +33,31 @@ Each recovery run:
 
 The queue runtime starts from `server.js`. Importing `src/app.js` does not start background work.
 
-## API Integration
+## API Endpoints
 
-The frontend post API calls these backend endpoints after Supabase writes:
+### Post Management API
+- `POST /api/scheduled-posts/:postId/jobs` - Schedules delayed jobs for one scheduled post.
+- `DELETE /api/scheduled-posts/:postId/jobs` - Removes pending delayed jobs for one post.
 
-- `POST /api/scheduled-posts/:postId/jobs` schedules delayed jobs for one scheduled post.
-- `DELETE /api/scheduled-posts/:postId/jobs` removes pending delayed jobs for one post.
+### Operational & Admin Visibility API (Gated by `authenticate` & `requireAdmin`)
+- `GET /api/scheduled-posts/queue/health` - Inspection of Redis connection, Queue counts (`waiting`, `active`, `delayed`, `completed`, `failed`), and Worker configuration.
+- `GET /api/scheduled-posts/queue/failed` - Inspection of failed BullMQ jobs with error messages and stack traces (`?limit=50`).
+- `GET /api/scheduled-posts/failed-targets` - Inspection of database-level `post_targets` publishing failures with parent post titles, connected accounts, and error details (`?limit=50&offset=0`).
 
-Set `BACKEND_API_URL` or `NEXT_PUBLIC_BACKEND_API_URL` for the frontend server if the backend is not running at `http://localhost:5000/api`.
+## Environment & Redis Configuration
 
-## Environment Variables
+The queue supports two connection configuration modes:
+
+1. **Single Connection URL**: Set `REDIS_URL` (e.g. `redis://:password@127.0.0.1:6379/0` or `rediss://...` for TLS).
+2. **Individual Parameters**: Set `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_DB`.
 
 | Name                                     | Default                  | Purpose                                           |
 | ---------------------------------------- | ------------------------ | ------------------------------------------------- |
 | `REDIS_URL`                              | `redis://127.0.0.1:6379` | Redis connection string used by BullMQ.           |
+| `REDIS_HOST`                             | `127.0.0.1`              | Redis server hostname (if `REDIS_URL` unset).     |
+| `REDIS_PORT`                             | `6379`                   | Redis server port.                                |
+| `REDIS_PASSWORD`                         | `undefined`              | Redis auth password.                              |
+| `REDIS_DB`                               | `0`                      | Redis database index.                             |
 | `SCHEDULED_POSTS_QUEUE_ENABLED`          | `true`                   | Set to `false` to disable the queue runtime.      |
 | `SCHEDULED_POSTS_RECOVERY_ENABLED`       | `true`                   | Set to `false` to disable the recovery scanner.   |
 | `SCHEDULED_POSTS_RECOVERY_PATTERN`       | `*/15 * * * *`           | Cron pattern for missed-job recovery.             |
@@ -54,8 +65,6 @@ Set `BACKEND_API_URL` or `NEXT_PUBLIC_BACKEND_API_URL` for the frontend server i
 | `SCHEDULED_POSTS_QUEUE_ATTEMPTS`         | `3`                      | Publish job attempts before final failure.        |
 | `SCHEDULED_POSTS_QUEUE_BACKOFF_DELAY_MS` | `30000`                  | Initial exponential backoff delay.                |
 | `SCHEDULED_POSTS_QUEUE_CONCURRENCY`      | `5`                      | Number of publish jobs processed concurrently.    |
-
-The legacy `SCHEDULED_POSTS_CRON_ENABLED`, `SCHEDULED_POSTS_CRON_EXPRESSION`, and `SCHEDULED_POSTS_SCHEDULER_PATTERN` names are still accepted as fallbacks.
 
 ## Database Statuses
 
@@ -87,36 +96,19 @@ Supported platform codes:
 - `facebook`
 - `instagram`
 - `pinterest`
-
-Facebook uses:
-
-- `posts.body_text` as message
-- `posts.link_url` as optional link
-- first `posts.media_urls` item as optional media link
-
-Instagram uses:
-
-- first `posts.media_urls` item as required media
-- `posts.body_text` as caption
-- `content_types.code` of `reel` or `video` to publish as Reel
-- image publishing for other content types
-
-Pinterest uses:
-
-- first `posts.media_urls` item as required image
-- `posts.body_text` as description
-- `posts.link_url` as optional destination link
-- `posts.metadata.pinterest.board_id` as required board id
+- `youtube`
+- `x` / `twitter`
+- `tiktok`
 
 Missing required provider data fails only that target and stores the reason in `post_targets.error_message`.
 
-## Module Files
+## Operational Troubleshooting & Recovery Playbook
 
-- `scheduled-posts.queue.js` owns BullMQ startup, shutdown, delayed job scheduling, recovery scheduler setup, and worker creation.
-- `scheduled-posts.service.js` owns target enqueueing, execution flow, retry-aware failure handling, and provider dispatch.
-- `scheduled-posts.controller.js` and `scheduled-posts.routes.js` expose post-level schedule/cancel endpoints.
-- `scheduled-posts.repository.js` owns `posts` and `post_targets` reads/writes.
+1. **Redis Down or Unreachable**:
+   - Inspect `/api/scheduled-posts/queue/health`. The status will show `"unhealthy"` or `"disabled"`.
+   - Restore Redis daemon/service (`systemctl restart redis`).
+   - The recovery scanner will automatically catch up and publish due pending targets on the next run.
 
-## Limitations
-
-Redis must be available for delayed scheduling and publishing. If Redis is unavailable when a post is created, the Supabase write can still succeed, and the recovery scanner can enqueue the missed job later after Redis is healthy. Analytics, notifications, and automatic token refresh before publish are intentionally out of scope for this version.
+2. **Publishing Failures**:
+   - Query `/api/scheduled-posts/queue/failed` to inspect failed BullMQ jobs.
+   - Query `/api/scheduled-posts/failed-targets` to view database target error messages (e.g. invalid OAuth token, missing media URL).
