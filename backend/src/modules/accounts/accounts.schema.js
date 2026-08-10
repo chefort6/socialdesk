@@ -1,6 +1,6 @@
 const { z } = require("zod");
 
-/** POST /api/accounts — manual (mock) account creation. */
+/** POST /api/accounts — development-only admin mock account creation. */
 exports.createAccountSchema = z.object({
   body: z.object({
     platformCode: z.string().min(1, "platformCode is required"),

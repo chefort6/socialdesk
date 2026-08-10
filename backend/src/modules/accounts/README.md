@@ -3,11 +3,11 @@
 ## Purpose
 
 The Accounts module exposes the HTTP API for a signed-in user to manage their own
-connected social accounts: list them, manually create one, update its status, and
-soft-disconnect it. It moves this logic off the Next.js `frontend/app/api/accounts`
-route (which talked to Supabase with the service-role key and an unverified JWT) and
-onto the Express backend, where the JWT is verified and every query is scoped to the
-caller.
+connected social accounts: list them, update their status, and soft-disconnect them.
+It also provides an explicitly enabled, non-production admin tool for creating mock
+accounts. It moves this logic off the Next.js `frontend/app/api/accounts` route (which
+talked to Supabase with the service-role key and an unverified JWT) and onto the
+Express backend, where the JWT is verified and every query is scoped to the caller.
 
 Real accounts are still connected by the provider OAuth callbacks through the
 [Social Connections](../social-connections/README.md) module; this module manages the
@@ -16,13 +16,15 @@ resulting records.
 ## Routes
 
 All routes are mounted at `/api/accounts` and require a valid session
-(`authenticate`). They are **user-scoped**, not admin-only — every query is filtered by
-`req.user.id`, so a user only ever sees or mutates their own accounts.
+(`authenticate`). `GET`, `PATCH`, and `DELETE` are user-scoped: every query is filtered
+by `req.user.id`, so a user only sees or mutates their own accounts. `POST` also
+requires an admin session and `MANUAL_ACCOUNT_CREATION_ENABLED=true`, and is always
+blocked in production.
 
 | Method & Path             | Purpose                                                                 |
 | ------------------------- | ----------------------------------------------------------------------- |
 | `GET /api/accounts`       | List the caller's active accounts, newest first, with nested `platforms`. |
-| `POST /api/accounts`      | Manually create (mock-connect) an account. Returns `201`.               |
+| `POST /api/accounts`      | Create a mock account as an enabled non-production admin. Returns `201`. |
 | `PATCH /api/accounts/:id` | Update status/details (`is_active`, `username`, `display_name`).        |
 | `DELETE /api/accounts/:id`| Soft-disconnect: sets `is_active = false`. The row and OAuth token are kept. |
 
@@ -70,11 +72,12 @@ backend is not running at `http://localhost:5000/api`.
 - Middleware: `src/shared/middleware/auth.middleware.js`, `validate.middleware.js`
 - Utils: `src/shared/utils/response.util.js`
 - Infrastructure: `src/infrastructure/database/supabaseClient.js`
-- Environment variables: `SUPABASE_URL`, `SUPABASE_KEY`, `JWT_SECRET`
+- Environment variables: `SUPABASE_URL`, `SUPABASE_KEY`, `JWT_SECRET`,
+  `MANUAL_ACCOUNT_CREATION_ENABLED`
 
 ## Known Limits
 
 Account "status" is the `is_active` boolean only — there is no richer status enum in the
-schema. Manual accounts have no `oauth_tokens` row and cannot publish. Cross-user
-administration (viewing another user's accounts) is out of scope here and belongs to the
-`account-admin` module.
+schema. Development-only mock accounts have no `oauth_tokens` row and cannot publish.
+Cross-user administration (viewing another user's accounts) is out of scope here and
+belongs to the `account-admin` module.
