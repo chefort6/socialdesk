@@ -5,6 +5,7 @@
 process.env.JWT_SECRET ||= "test-jwt-secret";
 process.env.SUPABASE_URL ||= "http://localhost:54321";
 process.env.SUPABASE_KEY ||= "test-anon-key";
+process.env.MANUAL_ACCOUNT_CREATION_ENABLED ||= "true";
 
 process.env.FB_APP_ID ||= "test-fb-app-id";
 process.env.FB_APP_SECRET ||= "test-fb-app-secret";

@@ -10,7 +10,7 @@ exports.listAccounts = async (userId) => {
 };
 
 /**
- * Manually creates (mock-connects) an account for the user. Resolves the
+ * Creates a mock account for the development-only admin route. Resolves the
  * platform code to its internal id first; getPlatformId throws for an unknown
  * code, which the controller surfaces as a 400.
  */
