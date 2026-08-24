@@ -21,9 +21,13 @@ exports.successResponse = (res, data, statusCode = 200) => {
  * @param {object|array} details - Additional error details (e.g., validation fields)
  */
 exports.errorResponse = (res, message, statusCode = 400, details = null) => {
+  const safeMessage =
+    process.env.NODE_ENV === "production" && statusCode >= 500
+      ? "Internal server error"
+      : message;
   const response = {
     success: false,
-    error: message,
+    error: safeMessage,
   };
 
   if (details) {

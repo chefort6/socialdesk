@@ -2,6 +2,13 @@ const twitterService = require("./twitter.service");
 const dbService = require("../social-connections/social-connections.service");
 const { successResponse, errorResponse } = require("../../shared/utils/response.util");
 
+const pkceCookieOptions = () => ({
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
+  path: "/",
+});
+
 /**
  * Redirects user to Twitter OAuth 2.0 PKCE login page.
  */
@@ -16,8 +23,7 @@ exports.redirectToTwitter = (req, res) => {
 
   // Store codeVerifier in a secure, httpOnly cookie for the callback step
   res.cookie("twitter_code_verifier", codeVerifier, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    ...pkceCookieOptions(),
     maxAge: 10 * 60 * 1000, // 10 minutes
   });
 
@@ -88,7 +94,7 @@ exports.handleTwitterCallback = async (req, res) => {
     });
 
     // Clear PKCE cookie
-    res.clearCookie("twitter_code_verifier");
+    res.clearCookie("twitter_code_verifier", pkceCookieOptions());
 
     return successResponse(res, {
       message: "X (Twitter) account linked successfully",

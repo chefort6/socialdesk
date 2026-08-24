@@ -1,4 +1,6 @@
 const REQUIRED_CORE_SECRETS = ["JWT_SECRET", "SUPABASE_URL", "SUPABASE_KEY"];
+const DEFAULT_CORS_ALLOWED_ORIGINS = "http://localhost:3000";
+const DEFAULT_JSON_BODY_LIMIT = "1mb";
 
 const PLACEHOLDER_VALUES = [
   "test-jwt-secret",
@@ -26,6 +28,62 @@ const applyDevDefaults = () => {
   process.env.JWT_SECRET ||= "test-jwt-secret";
   process.env.SUPABASE_URL ||= "http://localhost:54321";
   process.env.SUPABASE_KEY ||= "test-anon-key";
+  process.env.CORS_ALLOWED_ORIGINS ||= DEFAULT_CORS_ALLOWED_ORIGINS;
+  process.env.TRUST_PROXY ||= "false";
+  process.env.JSON_BODY_LIMIT ||= DEFAULT_JSON_BODY_LIMIT;
+};
+
+const parseTrustProxy = (value = "false") => {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "true") return true;
+  if (normalized === "false") return false;
+  if (/^\d+$/.test(normalized)) return Number(normalized);
+  throw new Error("[FATAL] TRUST_PROXY must be true, false, or a non-negative integer.");
+};
+
+const parseAllowedOrigins = (value) => {
+  const origins = value
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+    .map((origin) => {
+      const parsed = new URL(origin);
+      if (!["http:", "https:"].includes(parsed.protocol) || parsed.origin !== origin.replace(/\/$/, "")) {
+        throw new Error(`[FATAL] Invalid CORS origin: ${origin}. Use an origin only, without a path.`);
+      }
+      return parsed.origin;
+    });
+
+  if (origins.length === 0) {
+    throw new Error("[FATAL] CORS_ALLOWED_ORIGINS must contain at least one origin.");
+  }
+
+  return origins;
+};
+
+const getHttpConfig = ({ isProduction = process.env.NODE_ENV === "production" } = {}) => {
+  const corsValue = process.env.CORS_ALLOWED_ORIGINS?.trim();
+  const trustProxyValue = process.env.TRUST_PROXY?.trim();
+
+  if (isProduction) {
+    const missing = [];
+    if (!corsValue) missing.push("CORS_ALLOWED_ORIGINS");
+    if (!trustProxyValue) missing.push("TRUST_PROXY");
+    if (missing.length > 0) {
+      throw new Error(`[FATAL] Missing required production HTTP configuration: ${missing.join(", ")}.`);
+    }
+  }
+
+  const jsonBodyLimit = process.env.JSON_BODY_LIMIT?.trim() || DEFAULT_JSON_BODY_LIMIT;
+  if (!/^\d+(b|kb|mb|gb)$/i.test(jsonBodyLimit)) {
+    throw new Error("[FATAL] JSON_BODY_LIMIT must look like 512kb, 1mb, or 1gb.");
+  }
+
+  return {
+    allowedOrigins: parseAllowedOrigins(corsValue || DEFAULT_CORS_ALLOWED_ORIGINS),
+    trustProxy: parseTrustProxy(trustProxyValue || "false"),
+    jsonBodyLimit,
+  };
 };
 
 /**
@@ -70,7 +128,7 @@ const validateEnv = ({ isProduction = process.env.NODE_ENV === "production", exi
       console.log(`[ENV] Running in ${process.env.NODE_ENV || "development"} mode. All integrations configured.`);
     }
 
-    return { valid: true, mode: "development", readiness };
+    return { valid: true, mode: "development", readiness, http: getHttpConfig({ isProduction: false }) };
   }
 
   // Production validation: Fail Fast
@@ -90,16 +148,28 @@ const validateEnv = ({ isProduction = process.env.NODE_ENV === "production", exi
     throw new Error(errorMessage);
   }
 
+  let http;
+  try {
+    http = getHttpConfig({ isProduction: true });
+  } catch (error) {
+    console.error(error.message);
+    if (exitOnError) process.exit(1);
+    throw error;
+  }
+
   const readiness = getSecretsReadiness();
   console.log("[ENV] Production environment validation passed. Core secrets verified.");
 
-  return { valid: true, mode: "production", readiness };
+  return { valid: true, mode: "production", readiness, http };
 };
 
 module.exports = {
   validateEnv,
   getSecretsReadiness,
   applyDevDefaults,
+  getHttpConfig,
+  parseAllowedOrigins,
+  parseTrustProxy,
   REQUIRED_CORE_SECRETS,
   PLACEHOLDER_VALUES,
 };

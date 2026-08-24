@@ -72,10 +72,15 @@ export default function LoginPage() {
 			}
 
 			const expires = rememberMe ? 7 : 1;
-			Cookies.set("auth-token", data.token, { expires });
-			Cookies.set("user-role", data.role, { expires });
+			const cookieOptions = {
+				expires,
+				secure: process.env.NODE_ENV === "production",
+				sameSite: "lax" as const,
+			};
+			Cookies.set("auth-token", data.token, cookieOptions);
+			Cookies.set("user-role", data.role, cookieOptions);
 			if (data.user?.id) {
-				Cookies.set("user-id", data.user.id.toString(), { expires });
+				Cookies.set("user-id", data.user.id.toString(), cookieOptions);
 			}
 
 			router.push("/dashboard");

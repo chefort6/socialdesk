@@ -57,6 +57,7 @@ test("allows a user with an expired token to view /login and clears the stale co
   expect(isPassThrough(response)).toBe(true);
   expect(response.cookies.get("auth-token")?.value).toBe("");
   expect(response.cookies.get("user-role")?.value).toBe("");
+  expect(response.cookies.get("user-id")?.value).toBe("");
 });
 
 test("redirects an unauthenticated user away from a protected page", async () => {
@@ -73,6 +74,7 @@ test("redirects a user with an expired token away from a protected page and clea
   expect(response.headers.get("location")).toBe("http://localhost:3000/login");
   expect(response.cookies.get("auth-token")?.value).toBe("");
   expect(response.cookies.get("user-role")?.value).toBe("");
+  expect(response.cookies.get("user-id")?.value).toBe("");
 });
 
 test("redirects a user with a tampered token away from a protected page", async () => {

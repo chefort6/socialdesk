@@ -33,6 +33,7 @@ export async function proxy(request: NextRequest) {
     if (token && !hasValidSession) {
       response.cookies.delete("auth-token");
       response.cookies.delete("user-role");
+      response.cookies.delete("user-id");
     }
     return response;
   };

@@ -2,6 +2,13 @@ const tiktokService = require("./tiktok.service");
 const dbService = require("../social-connections/social-connections.service");
 const { successResponse, errorResponse } = require("../../shared/utils/response.util");
 
+const pkceCookieOptions = () => ({
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
+  path: "/",
+});
+
 /**
  * Redirects user to TikTok OAuth consent page.
  */
@@ -15,8 +22,7 @@ exports.redirectToTikTok = (req, res) => {
   const { codeVerifier, codeChallenge } = tiktokService.generatePKCE();
 
   res.cookie("tiktok_code_verifier", codeVerifier, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    ...pkceCookieOptions(),
     maxAge: 10 * 60 * 1000,
   });
 
@@ -86,7 +92,7 @@ exports.handleTikTokCallback = async (req, res) => {
       scope: tokenData.scope || "user.info.basic,video.upload,video.publish",
     });
 
-    res.clearCookie("tiktok_code_verifier");
+    res.clearCookie("tiktok_code_verifier", pkceCookieOptions());
 
     return successResponse(res, {
       message: "TikTok account linked successfully",
