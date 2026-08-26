@@ -55,7 +55,16 @@ SocialDesk is a social media management dashboard built on Next.js (App Router) 
    Create a `.env.local` file in the frontend directory and copy the `JWT_SECRET` from your backend `.env` file into it. This is required for the Next.js middleware (`proxy.ts`) to verify your authentication cookies.
    ```env
    JWT_SECRET=your_backend_jwt_secret_here
+   BACKEND_URL=http://localhost:5000
    ```
+
+   Set `BACKEND_URL` to the deployed Express API URL in production. The backend's
+   `CORS_ALLOWED_ORIGINS` must contain the deployed frontend origin.
+
+   NBE-060 preserves the current frontend-owned authentication cookies. They now use
+   `Secure` in production and `SameSite=Lax`, but `auth-token` remains JavaScript-readable
+   and cannot be `HttpOnly`. Future task: move authentication cookie ownership to the
+   backend and retest login, logout, token refresh, and API authorization end to end.
 
 4. Start the frontend development server (starts on `http://localhost:3000`):
    ```bash

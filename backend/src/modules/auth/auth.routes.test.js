@@ -64,13 +64,25 @@ test("POST /api/auth/login returns 500 when the repository fails", async (t) => 
   assert.equal(response.status, 500);
 });
 
-test("POST /api/auth/logout clears auth cookies and returns success", async () => {
+test("POST /api/auth/logout securely clears all frontend-owned auth cookies", async (t) => {
+  const originalNodeEnv = process.env.NODE_ENV;
+  t.after(() => {
+    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = originalNodeEnv;
+  });
+  process.env.NODE_ENV = "production";
+
   const response = await supertest(app).post("/api/auth/logout");
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, { success: true, data: { message: "Logged out successfully" } });
 
   const clearedCookies = response.headers["set-cookie"] || [];
-  assert.ok(clearedCookies.some((cookie) => cookie.startsWith("auth-token=;")));
-  assert.ok(clearedCookies.some((cookie) => cookie.startsWith("user-role=;")));
+  for (const name of ["auth-token", "user-role", "user-id"]) {
+    const cookie = clearedCookies.find((value) => value.startsWith(`${name}=;`));
+    assert.ok(cookie);
+    assert.match(cookie, /Path=\//);
+    assert.match(cookie, /Secure/);
+    assert.match(cookie, /SameSite=Lax/);
+  }
 });

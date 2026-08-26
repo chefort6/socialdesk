@@ -105,6 +105,7 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
     setUserMenuOpen(false);
     Cookies.remove("auth-token");
     Cookies.remove("user-role"); // Clean up admin cookie too
+    Cookies.remove("user-id");
     router.push("/login");
   };
 

@@ -17,6 +17,7 @@ export default function LogoutPage() {
     // This tells the Middleware "I am no longer allowed in"
     Cookies.remove("auth-token");
     Cookies.remove("user-role");
+    Cookies.remove("user-id");
 
     // 3. Wait 1.5 seconds for visual effect, then redirect to Login
     const timer = setTimeout(() => {

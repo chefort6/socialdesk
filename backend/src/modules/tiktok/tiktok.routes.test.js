@@ -17,7 +17,14 @@ test("GET /api/auth/tiktok/oauth requires a userId", async () => {
   assert.deepEqual(response.body, { success: false, error: "userId is required" });
 });
 
-test("GET /api/auth/tiktok/oauth redirects to TikTok OAuth authorize screen", async () => {
+test("GET /api/auth/tiktok/oauth redirects with a secure production PKCE cookie", async (t) => {
+  const originalNodeEnv = process.env.NODE_ENV;
+  t.after(() => {
+    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = originalNodeEnv;
+  });
+  process.env.NODE_ENV = "production";
+
   const response = await supertest(app).get("/api/auth/tiktok/oauth?userId=user-123");
 
   assert.equal(response.status, 302);
@@ -26,6 +33,11 @@ test("GET /api/auth/tiktok/oauth redirects to TikTok OAuth authorize screen", as
   assert.match(response.headers.location, /code_challenge=/);
   assert.match(response.headers.location, /code_challenge_method=S256/);
   assert.match(response.headers.location, /state=user-123/);
+  const cookie = response.headers["set-cookie"]?.[0] || "";
+  assert.match(cookie, /tiktok_code_verifier=/);
+  assert.match(cookie, /HttpOnly/);
+  assert.match(cookie, /Secure/);
+  assert.match(cookie, /SameSite=Lax/);
 });
 
 // --- OAuth callback ---

@@ -20,17 +20,30 @@ const dashboardRoutes = require("./modules/dashboard/dashboard.routes");
 const socialConnectionsRoutes = require("./modules/social-connections/social-connections.routes");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const { getHttpConfig } = require("./shared/config/env.config");
+const { notFound, handleError } = require("./shared/middleware/error.middleware");
 
 const app = express();
+const { allowedOrigins, trustProxy, jsonBodyLimit } = getHttpConfig();
 
-app.use(cookieParser());
-app.use(express.json());
+app.set("trust proxy", trustProxy);
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      const error = new Error("Origin not allowed");
+      error.statusCode = 403;
+      error.publicMessage = "Origin not allowed";
+      return callback(error);
+    },
     credentials: true,
   }),
 );
+app.use(cookieParser());
+app.use(express.json({ limit: jsonBodyLimit }));
 
 app.get("/api/", (req, res) => {
   res.json({ status: "ok" });
@@ -56,5 +69,8 @@ app.use("/api/saas-analytics", saasAnalyticsRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/social-connections", socialConnectionsRoutes);
+
+app.use(notFound);
+app.use(handleError);
 
 module.exports = app;
